@@ -16,100 +16,14 @@ a robust, modern and high performance Python library for generating image from a
 
 </div>
 
-## Very first steps
+## Highlight
+* All Basics, Async ready, Sync support, Fully Typed
+* Builtin batch generator for higher performance
+* Build on top of the giant `playwright`, simplified of headless browser and driver installation
 
-### Initial
-
-1. Initialize `git` inside your repo:
-
-```bash
-git init
-```
-
-2. If you don't have `Poetry` installed run:
-
-```bash
-make download-poetry
-```
-
-3. Initialize poetry and install `pre-commit` hooks:
-
-```bash
-make install
-```
-
-4. Upload initial code to GitHub (ensure you've run `make install` to use `pre-commit`):
-
-```bash
-git add .
-git commit -m ":tada: Initial commit"
-git branch -M main
-git remote add origin https://github.com/codustry/snap-html.git
-git push -u origin main
-```
-
-### Initial setting up
-
-- Set up [Dependabot](https://docs.github.com/en/github/administering-a-repository/enabling-and-disabling-version-updates#enabling-github-dependabot-version-updates) to ensure you have the latest dependencies.
-- Set up [Stale bot](https://github.com/apps/stale) for automatic issue closing.
-
-### Poetry
-
-All manipulations with dependencies are executed through Poetry. If you're new to it, look through [the documentation](https://python-poetry.org/docs/).
-
-<details>
-<summary>Notes about Poetry</summary>
-<p>
-
-Poetry's [commands](https://python-poetry.org/docs/cli/#commands) are very intuitive and easy to learn, like:
-
-- `poetry add numpy`
-- `poetry run pytest`
-- `poetry build`
-- etc
-
-</p>
-</details>
-
-### Building your package
-
-Building a new version of the application contains steps:
-
-- Bump the version of your package `poetry version <version>`. You can pass the new version explicitly, or a rule such as `major`, `minor`, or `patch`. For more details, refer to the [Semantic Versions](https://semver.org/) standard.
-- Make a commit to `GitHub`.
-- Create a `GitHub release`.
-- And... publish 🙂 `poetry publish --build`
-
-## What's next
-
-Well, that's up to you. I can only recommend the packages and articles that helped me.
-
-Packages:
-
-- [`Typer`](https://github.com/tiangolo/typer) is great for creating CLI applications.
-- [`Rich`](https://github.com/willmcgugan/rich) makes it easy to add beautiful formatting in the terminal.
-- [`FastAPI`](https://github.com/tiangolo/fastapi) is a type-driven asynchronous web framework.
-- [`IceCream`](https://github.com/gruns/icecream) is a little library for sweet and creamy debugging
-
-Articles:
-
-- [Open Source Guides](https://opensource.guide/)
-- [GitHub Actions Documentation](https://help.github.com/en/actions)
+### TODO
 - Maybe you would like to add [gitmoji](https://gitmoji.carloscuesta.me/) to commit names. This is really funny. 😄
 
-## 🚀 Features
-
-For your development we've prepared:
-
-- Supports for `Python 3.7` and higher.
-- [`Poetry`](https://python-poetry.org/) as the dependencies manager. See configuration in [`pyproject.toml`](https://github.com/codustry/snap-html/blob/master/pyproject.toml) and [`setup.cfg`](https://github.com/codustry/snap-html/blob/master/setup.cfg).
-- Power of [`black`](https://github.com/psf/black), [`isort`](https://github.com/timothycrosley/isort) and [`pyupgrade`](https://github.com/asottile/pyupgrade) formatters.
-- Ready-to-use [`pre-commit`](https://pre-commit.com/) hooks with formatters above.
-- Type checks with the configured [`mypy`](https://mypy.readthedocs.io).
-- Testing with [`pytest`](https://docs.pytest.org/en/latest/).
-- Docstring checks with [`darglint`](https://github.com/terrencepreilly/darglint).
-- Security checks with [`safety`](https://github.com/pyupio/safety) and [`bandit`](https://github.com/PyCQA/bandit).
-- Well-made [`.editorconfig`](https://github.com/codustry/snap-html/blob/master/.editorconfig), [`.dockerignore`](https://github.com/codustry/snap-html/blob/master/.dockerignore), and [`.gitignore`](https://github.com/codustry/snap-html/blob/master/.gitignore). You don't have to worry about those things.
 
 For building and deployment:
 
