@@ -32,10 +32,11 @@ classifiers = [  # Update me
 "snap-html" = "snap_html.__main__:app"
 
 [tool.poetry.dependencies]
-python = "^3.7"
-importlib_metadata = {version = "^1.6.0", python = "<3.8"}
+python = "^3.8"
 typer = {extras = ["all"], version = "^0.3.2"}
 rich = "^9.8.2"
+playwright = "^0.171.1"
+furl = "^2.1.0"
 
 [tool.poetry.dev-dependencies]
 darglint = "^1.5.8"
