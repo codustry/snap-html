@@ -50,11 +50,12 @@ pytest = "^6.2.1"
 pylint = "^2.6.0"
 pydocstyle = "^5.1.1"
 pre-commit = "^2.9.3"
+pdoc = "^4.0.0"
 
 [tool.black]
 # https://github.com/psf/black
 line-length = 80
-target-version = ["py37"]
+target-version = ["py38"]
 
 [tool.isort]
 # https://github.com/timothycrosley/isort/
