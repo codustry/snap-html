@@ -58,7 +58,6 @@ class HtmlDoc:
         return cls(html=prepared_html)
 
 
-
 async def generate_image_batch(
     targets: List[Union[str, Path, HtmlDoc]],
     *,
