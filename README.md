@@ -20,6 +20,7 @@ a robust, modern and high performance Python library for generating image from a
 * All Basics, Async ready, Sync support, Fully Typed
 * Builtin batch generator for higher performance
 * Build on top of the giant `playwright`, simplified of headless browser and driver installation
+* Accept html/css string, and You can use with `jinja2` for html templating
 
 ### TODO
 - Maybe you would like to add [gitmoji](https://gitmoji.carloscuesta.me/) to commit names. This is really funny. 😄

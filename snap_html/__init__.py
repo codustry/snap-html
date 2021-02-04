@@ -31,26 +31,31 @@ class Resolution(TypedDict):
 
 @dataclass
 class HtmlDoc:
-    body: str
-    head: str = ""
-    css: str = ""
+    html: str
 
-    def compile_html(self):
+    @classmethod
+    def create_from_html_parts(
+        cls,
+        body: str,
+        head: str = "",
+        css: str = "",
+    ):
         prepared_html = f"""\
                 <html>
                 <head>
-                    {self.head}
+                    {head}
                     <style>
-                        {self.css}
+                        {css}
                     </style>
                 </head>
 
                 <body>
-                    {self.body}
+                    {body}
                 </body>
                 </html>
                 """
-        return dedent(prepared_html)
+        prepared_html = dedent(prepared_html)
+        return cls(html=prepared_html)
 
 
 async def generate_image_batch(
@@ -81,8 +86,7 @@ async def generate_image_batch(
                 with tempfile.NamedTemporaryFile(
                     mode="w", suffix=".html", delete=False
                 ) as tf:
-                    content = target.compile_html()
-                    tf.write(content)
+                    tf.write(target.html)
                     url_address = f"file://{tf.name}"
 
             else:
