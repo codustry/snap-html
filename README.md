@@ -46,6 +46,8 @@ For creating your open source community:
 
 ```bash
 pip install -U snap-html
+
+python -m playwright install
 ```
 
 or install with `Poetry`
