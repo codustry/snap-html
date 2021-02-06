@@ -114,7 +114,7 @@ async def _generate(
 
 
 def generate_image_batch_sync(*args, **kwargs) -> bytes:
-    return asyncio.get_event_loop().run_until_complete(
+    return asyncio.run(
         generate_image_batch(*args, **kwargs)
     )
 
@@ -136,6 +136,6 @@ async def generate_image(
 
 
 def generate_image_sync(*args, **kwargs) -> bytes:
-    return asyncio.get_event_loop().run_until_complete(
+    return asyncio.run(
         generate_image(*args, **kwargs)
     )
