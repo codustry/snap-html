@@ -383,11 +383,11 @@ python-versions = ">=2.6"
 
 [[package]]
 name = "pdoc"
-version = "4.0.0"
-description = "A simple program and library to auto generate API documentation for Python modules."
+version = "6.1.0"
+description = "API Documentation for Python Projects"
 category = "dev"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.7"
 
 [package.dependencies]
 astunparse = {version = "*", markers = "python_version < \"3.9\""}
@@ -730,7 +730,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "a54078ac2f2e82acb3b1f1a57717dc40b011f3385fcaa625203355a97a6c4696"
+content-hash = "dbacff759b95f8cdb4327199c6c5621084c59663948d72164d86dd444f0f0f0e"
 
 [metadata.files]
 appdirs = [
@@ -1006,7 +1006,7 @@ pbr = [
     {file = "pbr-5.5.1.tar.gz", hash = "sha256:5fad80b613c402d5b7df7bd84812548b2a61e9977387a80a5fc5c396492b13c9"},
 ]
 pdoc = [
-    {file = "pdoc-4.0.0-py3-none-any.whl", hash = "sha256:f28959cd2455f367f71ea276a6a3028f3039a6590b33ea92b3767ac2ac7e5b23"},
+    {file = "pdoc-6.1.0-py3-none-any.whl", hash = "sha256:5dd28e25f556436579d4fd395ba88ebc3ccc4e5920967ef405381266aea9b293"},
 ]
 playwright = [
     {file = "playwright-0.171.1-py3-none-macosx_10_13_x86_64.whl", hash = "sha256:dd0265446af2383dc18949d04a53dff0af96e6288043937705753d28367f3f28"},

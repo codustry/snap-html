@@ -50,7 +50,7 @@ pytest = "^6.2.1"
 pylint = "^2.6.0"
 pydocstyle = "^5.1.1"
 pre-commit = "^2.9.3"
-pdoc = "^4.0.0"
+pdoc = "^6.1.0"
 
 [tool.black]
 # https://github.com/psf/black
