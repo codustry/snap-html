@@ -41,7 +41,7 @@ furl = "^2.1.0"
 [tool.poetry.dev-dependencies]
 darglint = "^1.5.8"
 isort = "^5.7.0"
-pyupgrade = "^2.7.4"
+pyupgrade = "^2.11.0"
 black = "^20.8b1"
 mypy = "^0.800"
 bandit = "^1.7.0"
