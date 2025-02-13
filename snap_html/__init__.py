@@ -29,7 +29,7 @@ except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 
 from typing import Dict, List, Optional, TypedDict, Union, Any
-from playwright.async_api import ViewportSize
+from playwright.async_api import ViewportSize, BrowserContext
 
 import asyncio
 import tempfile
@@ -87,6 +87,37 @@ def is_cm_resolution(resolution: Resolution) -> bool:
     return all(key in resolution for key in ('cm_width', 'cm_height', 'dpi'))
 
 
+class PlaywrightManager:
+    def __init__(self, viewport: ViewportSize, device_scale_factor: float):
+        self.viewport = viewport
+        self.device_scale_factor = device_scale_factor
+        self.playwright = None
+        self.browser = None
+        self.context = None
+
+    async def __aenter__(self):
+        self.playwright = await async_playwright().start()
+        self.browser = await self.playwright.chromium.launch(args=['--disable-dev-shm-usage'])
+        self.context = await self.browser.new_context(
+            viewport=self.viewport,
+            device_scale_factor=self.device_scale_factor
+        )
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.context:
+            await self.context.close()
+        if self.browser:
+            await self.browser.close()
+        if self.playwright:
+            await self.playwright.stop()
+
+    def get_context(self) -> BrowserContext:
+        if self.context is None:
+            raise Exception("Context not initialized. Use within 'async with' block.")
+        return self.context
+
+
 async def generate_image_batch(
     targets: List[Union[str, Path, HtmlDoc]],
     *,
@@ -94,6 +125,7 @@ async def generate_image_batch(
     query_parameters_list: Optional[List[Optional[Dict[str, Any]]]] = None,
     output_files: Optional[List[Optional[Union[Path, str]]]] = None,
     scale_factor: float = 1.0,
+    playwright_manager: Optional[PlaywrightManager] = None,
 ) -> List[bytes]:
     """
     target could be url, path or html doc
@@ -115,43 +147,71 @@ async def generate_image_batch(
     else:
         actual_resolution = ViewportSize(width=resolution['width'], height=resolution['height'])
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            args=['--disable-dev-shm-usage']
-        )
-        context = await browser.new_context(
-            viewport=actual_resolution,  # Use converted resolution
-            device_scale_factor=scale_factor
-        )
-        screenshots: List[bytes] = []
-        for target, query_parameters, output_file in zip(
-            targets, 
-            query_parameters_list or [None] * len(targets), 
-            output_files or [None] * len(targets)
-        ):
-            if isinstance(target, Path):
-                url_address = f"file://{target.absolute()}"
-            elif isinstance(target, HtmlDoc):
-                with tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".html", delete=False
-                ) as tf:
-                    tf.write(target.html)
-                    url_address = f"file://{tf.name}"
-            else:
-                url_address = target
+    # Use provided manager or create a temporary one
+    if playwright_manager:
+        context = playwright_manager.get_context()
+        close_context = False
+    else:
+        async with PlaywrightManager(actual_resolution, scale_factor) as manager:
+            context = manager.get_context()
+            close_context = True
 
-            await _generate(
-                context, output_file, query_parameters, screenshots, url_address
-            )
+            tasks = []
+            for target, query_parameters, output_file in zip(
+                targets,
+                query_parameters_list or [None] * len(targets),
+                output_files or [None] * len(targets)
+            ):
+                if isinstance(target, Path):
+                    url_address = f"file://{target.absolute()}"
+                elif isinstance(target, HtmlDoc):
+                    with tempfile.NamedTemporaryFile(
+                        mode="w", suffix=".html", delete=False
+                    ) as tf:
+                        tf.write(target.html)
+                        url_address = f"file://{tf.name}"
+                else:
+                    url_address = target
 
-        await context.close()
-        await browser.close()
-        return screenshots
+                tasks.append(
+                    _generate(context, output_file, query_parameters, [], url_address)
+                )
+            results = await asyncio.gather(*tasks)
+            screenshots = [item for sublist in results for item in sublist]
+
+            if close_context:
+                await context.close()
+            return screenshots
+
+    tasks = []
+    for target, query_parameters, output_file in zip(
+        targets,
+        query_parameters_list or [None] * len(targets),
+        output_files or [None] * len(targets)
+    ):
+        if isinstance(target, Path):
+            url_address = f"file://{target.absolute()}"
+        elif isinstance(target, HtmlDoc):
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".html", delete=False
+            ) as tf:
+                tf.write(target.html)
+                url_address = f"file://{tf.name}"
+        else:
+            url_address = target
+
+        tasks.append(
+            _generate(context, output_file, query_parameters, [], url_address)
+        )
+
+    results = await asyncio.gather(*tasks)
+    screenshots = [item for sublist in results for item in sublist]
+    return screenshots
 
 
 async def _generate(
-    context, output_file, query_parameters, screenshots, url_address
-):
+    context: BrowserContext, output_file: Optional[Union[Path, str]], query_parameters: Optional[Dict[str, Any]], screenshots: List[bytes], url_address: str
+) -> List[bytes]:
     page = await context.new_page()
     furl_url = furl(url_address)
     if query_parameters:
@@ -160,7 +220,7 @@ async def _generate(
     await page.goto(furl_url.url, wait_until="networkidle")
     screenshot = await page.screenshot(path=output_file)
     await page.close()
-    screenshots.append(screenshot)
+    return [screenshot]
 
 
 def generate_image_batch_sync(*args: Any, **kwargs: Any) -> List[bytes]:

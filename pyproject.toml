@@ -1,6 +1,6 @@
 [project]
 name = "snap-html"
-version = "0.3.0"
+version = "0.4.0"
 description = "a robust, modern and high performance Python library for generating image from a html string/html file/url build on top of `playwright`"
 authors = [{ name = "codustry", email = "hello@codustry.com" }]
 requires-python = "~=3.8"
