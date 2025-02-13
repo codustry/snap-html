@@ -1,56 +1,39 @@
-# Poetry pyproject.toml: https://python-poetry.org/docs/pyproject/
+[project]
+name = "snap-html"
+version = "0.3.0"
+description = "a robust, modern and high performance Python library for generating image from a html string/html file/url build on top of `playwright`"
+authors = [{ name = "codustry", email = "hello@codustry.com" }]
+requires-python = "~=3.8"
+readme = "README.md"
+license = "MIT"
+keywords = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "typer[all]>=0.3.2",
+    "rich>=9.8.2",
+    "playwright",
+    "furl>=2.1.0",
+    "pint>=0.21.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/codustry/snap-html"
+Repository = "https://github.com/codustry/snap-html"
+
+[project.scripts]
+snap-html = "snap_html.__main__:app"
 
 [build-system]
-requires = ["poetry>=1.0"]
-build-backend = "poetry.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry]
-name = "snap-html"
-version = "0.2.0"
-description = "a robust, modern and high performance Python library for generating image from a html string/html file/url build on top of `playwright`"
-readme = "README.md"
-authors = [
-  "codustry <hello@codustry.com>"
-]
-license = "MIT"
-repository = "https://github.com/codustry/snap-html"
-homepage = "https://github.com/codustry/snap-html"
-
-# Keywords description https://python-poetry.org/docs/pyproject/#keywords
-keywords = []  # Update me
-
-# Pypi classifiers: https://pypi.org/classifiers/
-classifiers = [  # Update me
-  "Development Status :: 3 - Alpha",
-  "Intended Audience :: Developers",
-  "Operating System :: OS Independent",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-]
-
-[tool.poetry.scripts]
-# Entry points for the package https://python-poetry.org/docs/pyproject/#scripts
-"snap-html" = "snap_html.__main__:app"
-
-[tool.poetry.dependencies]
-python = "^3.8"
-typer = {extras = ["all"], version = "^0.3.2"}
-rich = "^9.8.2"
-playwright = "^0.171.1"
-furl = "^2.1.0"
-
-[tool.poetry.dev-dependencies]
-darglint = "^1.5.8"
-isort = "^5.7.0"
-pyupgrade = "^2.7.4"
-black = "^20.8b1"
-mypy = "^0.800"
-bandit = "^1.7.0"
-safety = "^1.10.3"
-pytest = "^6.2.1"
-pylint = "^2.6.0"
-pydocstyle = "^5.1.1"
-pre-commit = "^2.10.1"
-pdoc = "^4.0.0"
+[dependency-groups]
+dev = ["pytest>=6.2.1", "pytest-asyncio>=0.20.3", "pytest-cov>=4.1.0"]
 
 [tool.black]
 # https://github.com/psf/black
@@ -68,3 +51,9 @@ indent = 4
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 80
+
+[tool.pytest.ini_options]
+markers = ["asyncio: mark test as async test"]
+addopts = "-v"
+testpaths = ["tests"]
+python_files = ["test_*.py"]

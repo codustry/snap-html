@@ -17,14 +17,15 @@ a robust, modern and high performance Python library for generating image from a
 </div>
 
 ## Highlight
-* All Basics, Async ready, Sync support, Fully Typed
-* Builtin batch generator for higher performance
-* Build on top of the giant `playwright`, simplified of headless browser and driver installation
-* Accept html/css string, and You can use with `jinja2` for html templating
+
+- All Basics, Async ready, Sync support, Fully Typed
+- Builtin batch generator for higher performance
+- Build on top of the giant `playwright`, simplified of headless browser and driver installation
+- Accept html/css string, and You can use with `jinja2` for html templating
 
 ### TODO
-- Maybe you would like to add [gitmoji](https://gitmoji.carloscuesta.me/) to commit names. This is really funny. 😄
 
+- Maybe you would like to add [gitmoji](https://gitmoji.carloscuesta.me/) to commit names. This is really funny. 😄
 
 For building and deployment:
 
@@ -48,6 +49,11 @@ For creating your open source community:
 pip install -U snap-html
 
 python -m playwright install
+
+# Install system dependencies for Linux (required for browsers)
+sudo playwright install-deps
+# Or manually install dependencies:
+sudo apt-get install libwoff1 libevent-2.1-7t64 libgstreamer-plugins-base1.0-0 libgstreamer-gl1.0-0 libgstreamer-plugins-bad1.0-0 libenchant-2-2 libsecret-1-0 libhyphen0 libmanette-0.2-0
 ```
 
 or install with `Poetry`
@@ -247,7 +253,7 @@ You can see the list of available releases on the [GitHub Releases](https://gith
 
 We follow [Semantic Versions](https://semver.org/) specification.
 
-We use [`Release Drafter`](https://github.com/marketplace/actions/release-drafter). As pull requests are merged, a draft release is kept up-to-date listing the changes, ready to publish when you’re ready. With the categories option, you can categorize pull requests in release notes using labels.
+We use [`Release Drafter`](https://github.com/marketplace/actions/release-drafter). As pull requests are merged, a draft release is kept up-to-date listing the changes, ready to publish when you're ready. With the categories option, you can categorize pull requests in release notes using labels.
 
 For Pull Request this labels are configured, by default:
 
@@ -288,4 +294,104 @@ This project is licensed under the terms of the `MIT` license. See [LICENSE](htt
 This project was generated with [`python-package-template`](https://github.com/TezRomacH/python-package-template).
 
 ## Alternative
+
 1. <https://github.com/vgalin/html2image>
+
+## Usage
+
+### Basic Usage
+
+```python
+from snap_html import generate_image_sync
+from pathlib import Path
+
+# Capture from URL
+screenshot = generate_image_sync(
+    "https://www.example.com",
+    resolution={"width": 1920, "height": 1080},
+    output_file=Path("screenshot.png")
+)
+
+# Capture with physical dimensions (in centimeters)
+screenshot = generate_image_sync(
+    "https://www.example.com",
+    resolution={
+        "cm_width": 21,      # A4 width
+        "cm_height": 29.7,   # A4 height
+        "dpi": 300          # Print quality DPI
+    },
+    output_file=Path("high_quality.png")
+)
+```
+
+### Resolution Options
+
+The library supports two ways to specify output resolution:
+
+1. Pixel Dimensions:
+
+```python
+resolution = {
+    "width": 1920,    # Width in pixels
+    "height": 1080    # Height in pixels
+}
+```
+
+2. Physical Dimensions:
+
+```python
+resolution = {
+    "cm_width": 21,    # Width in centimeters
+    "cm_height": 29.7, # Height in centimeters
+    "dpi": 300        # Dots per inch (optional, defaults to 300)
+}
+```
+
+### Batch Processing
+
+For better performance when capturing multiple screenshots:
+
+```python
+from snap_html import generate_image_batch_sync
+
+screenshots = generate_image_batch_sync(
+    targets=["https://example1.com", "https://example2.com"],
+    resolution={"width": 1920, "height": 1080},
+    output_files=["screenshot1.png", "screenshot2.png"]
+)
+```
+
+## CLI Usage
+
+snap-html provides a command-line interface for quick image captures:
+
+```bash
+# Basic usage with pixel dimensions
+snap-html capture https://example.com -o screenshot.png --width 1920 --height 1080
+
+# Using physical dimensions (e.g., A4 paper size)
+snap-html capture input.html --cm-width 21.0 --cm-height 29.7 --dpi 300 -o output.png
+
+# Capture with custom scale factor
+snap-html capture https://example.com -o screenshot.png --width 1024 --height 768 --scale 2.0
+```
+
+### CLI Options
+
+```
+Options:
+  -o, --output PATH         Output image file path
+  -w, --width INTEGER       Output width in pixels
+  -h, --height INTEGER      Output height in pixels
+  --cm-width FLOAT         Output width in centimeters
+  --cm-height FLOAT        Output height in centimeters
+  --dpi INTEGER            DPI for cm-based resolution [default: 300]
+  --scale FLOAT            Browser scale factor (zoom level) [default: 1.0]
+  --help                   Show this message and exit.
+```
+
+The CLI supports three types of input:
+
+1. URLs (e.g., https://example.com)
+2. HTML files (e.g., page.html)
+3. Raw HTML strings
