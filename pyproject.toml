@@ -1,6 +1,6 @@
 [project]
 name = "snap-html"
-version = "0.4.0"
+version = "0.5.0"
 description = "a robust, modern and high performance Python library for generating image from a html string/html file/url build on top of `playwright`"
 authors = [{ name = "codustry", email = "hello@codustry.com" }]
 requires-python = "~=3.8"
@@ -19,6 +19,7 @@ dependencies = [
     "playwright",
     "furl>=2.1.0",
     "pint>=0.21.1",
+    "pytest>=6.2.5",
 ]
 
 [project.urls]
@@ -33,24 +34,85 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = ["pytest>=6.2.1", "pytest-asyncio>=0.20.3", "pytest-cov>=4.1.0"]
+dev = [
+    "pytest>=6.2.1",
+    "pytest-asyncio>=0.20.3",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.2.0",
+]
 
-[tool.black]
-# https://github.com/psf/black
+[tool.ruff]
+# Enable pycodestyle (E), Pyflakes (F), isort (I), and more
 line-length = 80
-target-version = ["py38"]
+target-version = "py38"
+select = [
+    "E",
+    "F",
+    "I",
+    "W",
+    "N",
+    "B",
+    "D",
+    "UP",
+    "S",
+    "BLE",
+    "A",
+    "C4",
+    "T20",
+    "PT",
+    "RET",
+    "SIM",
+]
+ignore = []
 
-[tool.isort]
-# https://github.com/timothycrosley/isort/
-known_typing = "typing,types,typing_extensions,mypy,mypy_extensions"
-sections = "FUTURE,TYPING,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
-include_trailing_comma = true
-default_section = "FIRSTPARTY"
-multi_line_output = 3
-indent = 4
-force_grid_wrap = 0
-use_parentheses = true
-line_length = 80
+# Allow autofix for all enabled rules that support it
+fix = true
+unsafe-fixes = false
+
+# Exclude a variety of commonly ignored directories
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+skip-magic-trailing-comma = false
+
+[tool.ruff.isort]
+known-first-party = ["snap_html"]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+combine-as-imports = true
+
+[tool.ruff.pydocstyle]
+convention = "google"
 
 [tool.pytest.ini_options]
 markers = ["asyncio: mark test as async test"]

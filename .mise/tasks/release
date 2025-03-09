@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION=${1:-"patch"}
+echo "Preparing release ($VERSION)..."
+
+# Ensure working directory is clean
+if [[ -n $(git status --porcelain) ]]; then
+  echo "Error: Working directory is not clean. Commit or stash changes first."
+  exit 1
+fi
+
+# Run tests
+echo "Running tests..."
+mise run test
+
+# Run lint checks
+echo "Running linters..."
+mise run check
+mise run check-safety
+
+# Update version
+echo "Updating version ($VERSION)..."
+if [[ "$VERSION" == "patch" || "$VERSION" == "minor" || "$VERSION" == "major" ]]; then
+  # Implement version bumping logic here
+  echo "Version bump not implemented in this script"
+  exit 1
+else
+  # Set explicit version
+  # Implement version setting logic here
+  echo "Setting version to $VERSION not implemented in this script"
+  exit 1
+fi
+
+# Build package
+echo "Building package..."
+mise run build
+
+echo "Release preparation complete!"
+echo "To publish, run: mise run publish" 
