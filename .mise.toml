@@ -2,7 +2,7 @@
 python = "3.8"
 
 [env]
-PYTHONPATH = "$PYTHONPATH:$PWD"
+'_'.file = ".env.yaml"
 
 [tasks.install]
 description = "Install dependencies"
@@ -42,8 +42,12 @@ run = "uv pip check && uv run safety check --full-report && uv run bandit -ll -r
 
 [tasks.build]
 description = "Build package"
-run = "uv run pip install build && uv run python -m build"
+sources = ["snap_html"]
+outputs = ["dist"]
+run = "rm -rf dist && uv build"
 
 [tasks.publish]
+depends = ["build"]
+sources = ["dist"]
 description = "Publish package to PyPI"
-run = "uv run pip install twine && uv run twine upload dist/*"
+run = "uv publish"
