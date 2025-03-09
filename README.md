@@ -33,6 +33,7 @@ Built on top of `playwright` for reliability and speed.
 - 🖼️ **Flexible Display**: Multiple object-fit options (contain, cover, fill)
 - 🖨️ **Print-Ready**: Combined PrintMediaResolution for precise document sizing
 - 💪 **Developer Friendly**: Sensible defaults with optional fine-tuning
+- ⏱️ **Precise Timing**: Custom `RENDER_COMPLETE` signal for perfect screenshot timing
 
 ## 🧑‍💻 Development
 
@@ -266,6 +267,42 @@ screenshot = generate_image_sync(
 )
 ```
 
+### Render Complete Signal
+
+For pages with dynamic content or JavaScript animations, you can control exactly when the screenshot is taken using the `RENDER_COMPLETE` signal:
+
+```python
+from snap_html import generate_image_sync
+
+# Specify a longer timeout for waiting for the RENDER_COMPLETE signal
+screenshot = generate_image_sync(
+    "https://www.example.com",
+    render_timeout=15.0  # Wait up to 15 seconds for RENDER_COMPLETE signal
+)
+```
+
+In your HTML/JavaScript, add a console log message to signal when rendering is complete:
+
+```html
+<script>
+  // After your page is fully rendered and ready for screenshot
+  window.addEventListener('load', function() {
+    // Do any final rendering tasks
+    setTimeout(function() {
+      console.log('RENDER_COMPLETE');
+    }, 500); // Add a small delay if needed
+  });
+</script>
+```
+
+This is particularly useful for:
+- Pages with dynamic content loading
+- JavaScript animations or transitions
+- Asynchronous data fetching
+- Custom rendering logic
+
+If the `RENDER_COMPLETE` signal is not received within the specified timeout, snap-html will fall back to using the "networkidle" state to determine when to take the screenshot.
+
 ## 🖥️ CLI Usage
 
 **Basic commands**:
@@ -282,6 +319,9 @@ snap-html capture https://example.com -o screenshot.png --width 1024 --height 76
 
 # Using both pixel and physical dimensions with object-fit
 snap-html capture https://example.com -o screenshot.png --width 1920 --height 1080 --cm-width 21.0 --cm-height 29.7 --object-fit cover
+
+# Wait for RENDER_COMPLETE signal with custom timeout
+snap-html capture https://example.com -o screenshot.png --render-timeout 15.0
 ```
 
 **Available Options**:
@@ -294,6 +334,7 @@ snap-html capture https://example.com -o screenshot.png --width 1920 --height 10
   --dpi INTEGER             DPI for cm-based resolution [default: 300]
   --scale FLOAT             Browser scale factor (zoom level) [default: 1.5]
   --object-fit TEXT         How content fits viewport: contain, cover, fill, none [default: contain]
+  --render-timeout FLOAT    Time to wait for RENDER_COMPLETE signal (in seconds) [default: 10.0]
   --help                    Show this message and exit.
 ```
 
