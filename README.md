@@ -263,7 +263,16 @@ screenshot = generate_image_sync(
         "dpi": 300,
         "object_fit": "contain"
     },
-    scale_factor=1.5  # Increase zoom level for sharper text
+    scale_factor=1.5,  # Increase zoom level for sharper text
+    render_timeout=10.0  # Wait up to 10 seconds for RENDER_COMPLETE signal
+)
+
+# Using object_fit as a separate parameter
+screenshot = generate_image_sync(
+    "https://www.example.com",
+    resolution={"width": 1920, "height": 1080},
+    object_fit="cover",  # Content will cover the entire viewport
+    scale_factor=1.5
 )
 ```
 
@@ -309,19 +318,19 @@ If the `RENDER_COMPLETE` signal is not received within the specified timeout, sn
 
 ```bash
 # Basic usage with pixel dimensions
-snap-html capture https://example.com -o screenshot.png --width 1920 --height 1080
+snap-html https://example.com -o screenshot.png --width 1920 --height 1080
 
 # Using physical dimensions (e.g., A4 paper size)
-snap-html capture input.html --cm-width 21.0 --cm-height 29.7 --dpi 300 -o output.png
+snap-html input.html --cm-width 21.0 --cm-height 29.7 --dpi 300 -o output.png
 
 # Capture with custom scale factor
-snap-html capture https://example.com -o screenshot.png --width 1024 --height 768 --scale 2.0
+snap-html https://example.com -o screenshot.png --width 1024 --height 768 --scale 2.0
 
 # Using both pixel and physical dimensions with object-fit
-snap-html capture https://example.com -o screenshot.png --width 1920 --height 1080 --cm-width 21.0 --cm-height 29.7 --object-fit cover
+snap-html https://example.com -o screenshot.png --width 1920 --height 1080 --cm-width 21.0 --cm-height 29.7 --object-fit cover
 
 # Wait for RENDER_COMPLETE signal with custom timeout
-snap-html capture https://example.com -o screenshot.png --render-timeout 15.0
+snap-html https://example.com -o screenshot.png --timeout 15.0
 ```
 
 **Available Options**:
@@ -333,8 +342,8 @@ snap-html capture https://example.com -o screenshot.png --render-timeout 15.0
   --cm-height FLOAT         Output height in centimeters
   --dpi INTEGER             DPI for cm-based resolution [default: 300]
   --scale FLOAT             Browser scale factor (zoom level) [default: 1.5]
-  --object-fit TEXT         How content fits viewport: contain, cover, fill, none [default: contain]
-  --render-timeout FLOAT    Time to wait for RENDER_COMPLETE signal (in seconds) [default: 10.0]
+  --timeout FLOAT           Time to wait for RENDER_COMPLETE signal (in seconds)
+  --object-fit TEXT         How content fits viewport: contain, cover, fill, none
   --help                    Show this message and exit.
 ```
 

@@ -38,7 +38,7 @@ run = "uv run ruff check snap_html/ tests/"
 
 [tasks.build]
 description = "Build package"
-sources = ["snap_html"]
+sources = ["snap_html/**/*.py", "pyproject.toml", "README.md", "LICENSE"]
 outputs = ["dist"]
 run = "rm -rf dist && uv build"
 

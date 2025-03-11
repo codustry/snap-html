@@ -1,10 +1,10 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union, Literal
 
 import typer
 from rich import print
 
-from . import HtmlDoc, generate_image_sync
+from . import HtmlDoc, generate_image_sync, ScreenResolution, PrintMediaResolution
 
 app = typer.Typer(help="Generate images from HTML content")
 
@@ -14,7 +14,7 @@ def capture(
     source: str = typer.Argument(
         ..., help="HTML file path, URL, or raw HTML string"
     ),
-    output: Path = typer.Option(
+    output: Optional[Path] = typer.Option(
         None, "--output", "-o", help="Output image file path"
     ),
     width: Optional[int] = typer.Option(
@@ -31,7 +31,10 @@ def capture(
     ),
     dpi: int = typer.Option(300, "--dpi", help="DPI for cm-based resolution"),
     scale: float = typer.Option(
-        1.0, "--scale", help="Browser scale factor (zoom level)"
+        1.5, "--scale", help="Browser scale factor (zoom level)"
+    ),
+    timeout: Optional[float] = typer.Option(
+        None, "--timeout", help="Time to wait for RENDER_COMPLETE signal (in seconds)"
     ),
 ) -> None:
     """Generate an image from HTML content. The source can be:
@@ -52,24 +55,42 @@ def capture(
         else:
             target = HtmlDoc(html=source)
 
-        # Determine resolution type
+        # Determine target resolution
         if cm_width is not None and cm_height is not None:
-            resolution = {
-                "cm_width": cm_width,
-                "cm_height": cm_height,
-                "dpi": dpi,
-            }
+            # Print media resolution
+            target_resolution = PrintMediaResolution(
+                width=cm_width,
+                height=cm_height,
+                unit="cm",
+                dpi=dpi,
+            )
         elif width is not None and height is not None:
-            resolution = {"width": width, "height": height}
+            # Screen resolution
+            target_resolution = ScreenResolution(
+                width=width,
+                height=height,
+            )
         else:
-            resolution = {"width": 1920, "height": 1080}
+            # Default resolution
+            target_resolution = "720p"
+
+        # Determine as_if_show_in_screen_resolution
+        as_if_show_in_screen_resolution = None
+        if width is not None and height is not None and (cm_width is not None and cm_height is not None):
+            # If both pixel and physical dimensions are provided, use pixel dimensions for display context
+            as_if_show_in_screen_resolution = ScreenResolution(
+                width=width,
+                height=height,
+            )
 
         # Generate the image
         screenshot = generate_image_sync(
             target,
-            resolution=resolution,
+            target_resolution=target_resolution,
+            as_if_show_in_screen_resolution=as_if_show_in_screen_resolution,
             output_file=output,
-            scale_factor=scale,
+            scale_factor=scale if as_if_show_in_screen_resolution is None else None,  # Only use scale_factor if not using as_if_show_in_screen_resolution
+            render_timeout=timeout,
         )
 
         if output:

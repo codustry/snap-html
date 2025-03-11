@@ -9,6 +9,7 @@ except ImportError:  # pragma: no cover
         version,  # type: ignore
     )
 
+from typing_extensions import Literal
 import pint
 
 
@@ -24,6 +25,13 @@ class UnitConverter:
         inches = cm_quantity.to(self.ureg.inch).magnitude
         # Calculate pixels
         return int(round(inches * dpi))
+    
+    def inch_to_pixels(self, inch: float, dpi: int) -> int:
+        """Convert inches to pixels based on DPI"""
+        # Create a quantity from the inch value
+        inch_quantity = inch * self.ureg.inch
+        # Convert to pixels
+        return int(round(inch_quantity.to(self.ureg.px).magnitude))
 
 
 try:
@@ -40,51 +48,95 @@ from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from furl import furl
 from playwright.async_api import BrowserContext, ViewportSize, async_playwright
+from pydantic import BaseModel
 
 
-class PixelResolution(TypedDict):
-    width: int
-    height: int
-
-
-class CMResolution(TypedDict):
-    cm_width: float
-    cm_height: float
-    dpi: int
-
-
-# Supported object-fit values (similar to CSS object-fit)
-class ObjectFit:
-    CONTAIN = (
-        "contain"  # Scale to fit within viewport while maintaining aspect ratio
-    )
-    COVER = "cover"  # Scale to fill viewport while maintaining aspect ratio
-    FILL = "fill"  # Stretch to fill viewport (may distort)
-    NONE = "none"  # No scaling
-
-
-class PrintMediaResolution(TypedDict, total=False):
-    """Combined resolution type that can contain both pixel and physical dimensions.
-    All fields are optional, with sensible defaults applied when missing.
-
-    Defaults:
-    - width/height: 1920x1080 if not provided
-    - dpi: 300 if not provided
-    - object_fit: "contain" if not provided
+# For screen display - no DPI needed
+class ScreenResolution(BaseModel):
+    """Resolution type for screen display (pixel dimensions only).
+    
+    All fields are required.
     """
-
     # Pixel dimensions
     width: int
     height: int
+
+    @property
+    def px_width(self) -> int:
+        return self.width
+
+    @property
+    def px_height(self) -> int:
+        return self.height
+
+
+class PrintMediaResolution(BaseModel):
+    """Resolution type for print media that requires physical dimensions with DPI.
+    
+    All fields are required.
+    """
     # Physical dimensions (cm)
-    cm_width: float
-    cm_height: float
-    dpi: int
-    # How content should fit in the viewport
-    object_fit: str
+    width: float
+    height: float
+    unit: Literal["cm", "in"] = "cm"
+    dpi: int = 300
 
 
-Resolution = Union[PixelResolution, CMResolution, PrintMediaResolution]
+
+    @property
+    def px_width(self) -> int:
+        uc = UnitConverter()
+        return uc.cm_to_pixels(self.width, self.dpi) if self.unit == "cm" else uc.inch_to_pixels(self.width, self.dpi)
+
+    @property
+    def px_height(self) -> int:
+        uc = UnitConverter()
+        return uc.cm_to_pixels(self.height, self.dpi) if self.unit == "cm" else uc.inch_to_pixels(self.height, self.dpi)
+
+
+Resolution = Union[ScreenResolution, PrintMediaResolution]
+
+
+# Common screen resolutions by name
+STANDARD_RESOLUTIONS = {
+    # Standard resolutions
+    "480p": (854, 480),
+    "720p": (1280, 720),
+    "1080p": (1920, 1080),
+    "1440p": (2560, 1440),
+    "2160p": (3840, 2160),
+    "4k": (3840, 2160),
+    # Common alternative names
+    "hd": (1280, 720),
+    "fullhd": (1920, 1080),
+    "fhd": (1920, 1080),
+    "2k": (2560, 1440),
+    "qhd": (2560, 1440),
+    "uhd": (3840, 2160),
+}
+
+
+def parse_resolution_string(resolution_str: str) -> ScreenResolution:
+    """Convert standard resolution string (e.g., '1080p') to pixel dimensions.
+    
+    Args:
+        resolution_str: String specifying a standard resolution (e.g., '1080p', '4k')
+        
+    Returns:
+        ScreenResolution with width and height in pixels
+        
+    Raises:
+        ValueError: If the resolution string is not recognized
+    """
+    # Normalize the string (lowercase, remove spaces)
+    normalized = resolution_str.lower().strip().replace(" ", "")
+    
+    if normalized in STANDARD_RESOLUTIONS:
+        width, height = STANDARD_RESOLUTIONS[normalized]
+        return ScreenResolution(width=width, height=height)
+    else:
+        raise ValueError(f"Unrecognized resolution format: {resolution_str}. "
+                        f"Supported formats: {', '.join(sorted(STANDARD_RESOLUTIONS.keys()))}")
 
 
 @dataclass
@@ -115,15 +167,6 @@ class HtmlDoc:
         prepared_html = dedent(prepared_html)
         return cls(html=prepared_html)
 
-
-def is_cm_resolution(resolution: Resolution) -> bool:
-    """Helper function to check if resolution is CMResolution or has CM attributes"""
-    return "cm_width" in resolution and "cm_height" in resolution
-
-
-def has_pixel_dimensions(resolution: Resolution) -> bool:
-    """Helper function to check if resolution has pixel dimensions"""
-    return "width" in resolution and "height" in resolution
 
 
 class PlaywrightManager:
@@ -159,127 +202,91 @@ class PlaywrightManager:
             )
         return self.context
 
+def calculate_scale_factor(resolution: Resolution, asIfShowInScreenResolution: Resolution) -> float:
+    """Calculate the scale factor based on the resolution and the asIfShowInScreenResolution"""
+    height_ratio = resolution.px_height / asIfShowInScreenResolution.px_height
+    width_ratio = resolution.px_width / asIfShowInScreenResolution.px_width
+    return max(min(height_ratio, width_ratio ), 1)
+
+
 
 async def generate_image_batch(
-    targets: List[Union[str, Path, HtmlDoc]],
+    sources: List[Union[str, Path, HtmlDoc]],
     *,
-    resolution: Optional[Resolution] = None,
+    target_resolution: Union[Resolution, str] = '720p',
+    as_if_show_in_screen_resolution: Optional[Union[Resolution, str]] = None,
+    scale_factor: float | None = None,
     query_parameters_list: Optional[List[Optional[Dict[str, Any]]]] = None,
     output_files: Optional[List[Optional[Union[Path, str]]]] = None,
-    scale_factor: float = 1.5,
     playwright_manager: Optional[PlaywrightManager] = None,
     render_timeout: float = 10.0,
-    object_fit: str = ObjectFit.CONTAIN,
 ) -> List[bytes]:
-    """Target could be url, path or html doc
-    resolution: Can be either pixel dimensions (width/height) or physical dimensions (cm_width/cm_height/dpi)
-                or a combined PrintMediaResolution
-    scale_factor: Browser zoom level (1.0 = 100%, 1.5 = 150%, etc.)
-    render_timeout: Time to wait for RENDER_COMPLETE signal (in seconds) before falling back to networkidle
-    object_fit: How content should fit in the viewport (contain, cover, fill, none), defaults to contain
+    """Generate images from multiple sources in batch mode.
+
+    Args:
+        sources: List of URLs, file paths, or HTML documents to capture
+        target_resolution: Can be either a Resolution object (ScreenResolution or PrintMediaResolution)
+            or a string representing a standard resolution (e.g., "1080p", "4k")
+        as_if_show_in_screen_resolution: Optional resolution to simulate how the content would appear on a different screen
+        scale_factor: Browser zoom level (1.0 = 100%, 1.5 = 150%, etc.)
+        query_parameters_list: Optional parameters to add to URLs
+        output_files: Optional paths to save images
+        playwright_manager: Optional PlaywrightManager (allows reuse for multiple calls)
+        render_timeout: Time to wait for RENDER_COMPLETE signal (in seconds) before falling back to networkidle
+
+    Returns:
+        List[bytes]: List of screenshots as PNG bytes
+
+    Note:
+        The parameters as_if_show_in_screen_resolution and scale_factor cannot be used together.
+        If both are provided, a ValueError will be raised.
     """
-    converter = UnitConverter()
 
-    # Handle resolution conversion
-    if resolution is None:
-        # Default to HD resolution if nothing specified
-        resolution = {"width": 1920, "height": 1080}
+    # as_if_show_in_screen_resolution and scale_factor cannot coexist
+    if as_if_show_in_screen_resolution and scale_factor:
+        raise ValueError("as_if_show_in_screen_resolution and scale_factor cannot coexist")
 
-    # Extract object_fit from resolution if present, otherwise use the parameter value which defaults to CONTAIN
-    content_fit = (
-        resolution.get("object_fit", object_fit)
-        if isinstance(resolution, dict)
-        else object_fit
-    )
+    if isinstance(target_resolution, str):
+        # Parse standard resolution string (e.g., "1080p", "4k")
+        target_resolution = parse_resolution_string(target_resolution)
 
-    # Initialize viewport dimensions
-    has_cm = is_cm_resolution(resolution)
-    has_pixels = has_pixel_dimensions(resolution)
+    if as_if_show_in_screen_resolution and isinstance(as_if_show_in_screen_resolution, str):
+        as_if_show_in_screen_resolution = parse_resolution_string(as_if_show_in_screen_resolution)
 
-    # Determine the actual viewport size based on the resolution type
-    if has_cm:
-        dpi = int(resolution.get("dpi", 300))
-        cm_width = float(resolution.get("cm_width", 0))
-        cm_height = float(resolution.get("cm_height", 0))
+    device_scale_factor: float = 1.0
+    if as_if_show_in_screen_resolution:
+        device_scale_factor = calculate_scale_factor(target_resolution, as_if_show_in_screen_resolution)
+    elif scale_factor:
+        device_scale_factor = scale_factor
 
-        # Convert cm to pixels
-        pixel_width = converter.cm_to_pixels(cm_width, dpi)
-        pixel_height = converter.cm_to_pixels(cm_height, dpi)
+    # output device_scale_factor
+    print(f"target_resolution: {target_resolution}")
+    print(f"as_if_show_in_screen_resolution: {as_if_show_in_screen_resolution}")
+    print(f"scale_factor: {scale_factor}")
+    print(f"device_scale_factor: {device_scale_factor}")
 
-        # If we also have pixel dimensions, we'll use them for viewport and scale the content
-        if has_pixels:
-            screen_width = int(resolution.get("width", 1920))
-            screen_height = int(resolution.get("height", 1080))
-
-            # Calculate the scale needed to fit the content
-            if content_fit == ObjectFit.CONTAIN:
-                scale_ratio = min(
-                    screen_width / pixel_width, screen_height / pixel_height
-                )
-            elif content_fit == ObjectFit.COVER:
-                scale_ratio = max(
-                    screen_width / pixel_width, screen_height / pixel_height
-                )
-            elif content_fit == ObjectFit.FILL:
-                # No need to calculate ratio, we'll stretch to fill
-                actual_resolution = ViewportSize(
-                    width=screen_width, height=screen_height
-                )
-                # Adjust content scale
-                device_scale = scale_factor * (
-                    dpi / 96.0
-                )  # 96 is typical screen DPI
-                scale_ratio = 1.0
-            else:  # ObjectFit.NONE or invalid value
-                scale_ratio = 1.0
-
-            if content_fit in [ObjectFit.CONTAIN, ObjectFit.COVER]:
-                # Apply the scaling
-                actual_resolution = ViewportSize(
-                    width=screen_width, height=screen_height
-                )
-                # Adjust device scale factor to achieve proper rendering
-                device_scale = scale_factor * scale_ratio * (dpi / 96.0)
-            else:
-                actual_resolution = ViewportSize(
-                    width=screen_width, height=screen_height
-                )
-                device_scale = scale_factor * (dpi / 96.0)
-        else:
-            # Only CM dimensions provided
-            actual_resolution = ViewportSize(
-                width=pixel_width, height=pixel_height
-            )
-            device_scale = scale_factor
-    elif has_pixels:
-        # Only pixel dimensions provided
-        screen_width = int(resolution.get("width", 1920))
-        screen_height = int(resolution.get("height", 1080))
-        actual_resolution = ViewportSize(
-            width=screen_width, height=screen_height
-        )
-        device_scale = scale_factor
-    else:
-        # No valid dimensions provided, use default
-        actual_resolution = ViewportSize(width=1920, height=1080)
-        device_scale = scale_factor
+    # warn user if the resolution goes beyond 4k
+    if target_resolution.px_width > 3840 or target_resolution.px_height > 2160:
+        print(f"Warning: The resolution is beyond 4k. This may cause performance issues.")
 
     # Use provided manager or create a temporary one
     if playwright_manager:
         context = playwright_manager.get_context()
         close_context = False
     else:
+        # Ensure we pass the correct viewport size (width, height) to PlaywrightManager
+        viewport = ViewportSize(width=target_resolution.px_width, height=target_resolution.px_height)
         async with PlaywrightManager(
-            actual_resolution, device_scale
+            viewport, device_scale_factor
         ) as manager:
             context = manager.get_context()
             close_context = True
 
             tasks = []
             for target, query_parameters, output_file in zip(
-                targets,
-                query_parameters_list or [None] * len(targets),
-                output_files or [None] * len(targets),
+                sources,
+                query_parameters_list or [None] * len(sources),
+                output_files or [None] * len(sources),
             ):
                 if isinstance(target, Path):
                     url_address = f"file://{target.absolute()}"
@@ -311,9 +318,9 @@ async def generate_image_batch(
 
     tasks = []
     for target, query_parameters, output_file in zip(
-        targets,
-        query_parameters_list or [None] * len(targets),
-        output_files or [None] * len(targets),
+        sources,
+        query_parameters_list or [None] * len(sources),
+        output_files or [None] * len(sources),
     ):
         if isinstance(target, Path):
             url_address = f"file://{target.absolute()}"
@@ -394,42 +401,52 @@ def generate_image_batch_sync(*args: Any, **kwargs: Any) -> List[bytes]:
 async def generate_image(
     target: Union[str, Path, HtmlDoc],
     *,
-    resolution: Optional[Resolution] = None,
+    target_resolution: Optional[Union[Resolution, str]] = None,
+    as_if_show_in_screen_resolution: Optional[Union[Resolution, str]] = None,
     query_parameters: Optional[Dict[str, Any]] = None,
     output_file: Optional[Union[Path, str]] = None,
-    scale_factor: float = 1.5,
+    scale_factor: float | None = None,
     render_timeout: float = 10.0,
-    object_fit: str = ObjectFit.CONTAIN,
 ) -> bytes:
     """Generate an image from a target (URL, file path, or HTML document).
 
     Args:
         target: URL, file path, or HTML document to capture
-        resolution: Viewport dimensions in pixels or cm. Can be:
-                   - PixelResolution (width, height)
-                   - CMResolution (cm_width, cm_height, dpi)
-                   - PrintMediaResolution (combination of both with optional object_fit)
-                   If None, defaults to 1920x1080 pixels
+        resolution: Viewport dimensions. Can be:
+                    - ScreenResolution object (pixel dimensions only)
+                    - PrintMediaResolution object (physical dimensions with DPI)
+                    - String representing a standard resolution (e.g., "1080p", "4k")
+                    If None, defaults to 1920x1080 pixels
         query_parameters: Optional parameters to add to URL if target is a URL
         output_file: Optional path to save the image
         scale_factor: Browser zoom level (1.0 = 100%, 1.5 = 150%, etc.)
         render_timeout: Time to wait for RENDER_COMPLETE signal before fallback
-        object_fit: How content should fit in viewport (contain, cover, fill, none), defaults to contain
 
     Returns:
-        bytes: The screenshot as bytes
+        bytes: Screenshot data as PNG bytes
     """
     screenshots = await generate_image_batch(
         [target],
-        resolution=resolution,
+        target_resolution=target_resolution,
+        as_if_show_in_screen_resolution=as_if_show_in_screen_resolution,
         query_parameters_list=[query_parameters],
         output_files=[output_file],
         scale_factor=scale_factor,
         render_timeout=render_timeout,
-        object_fit=object_fit,
     )
     return screenshots[0]
 
 
 def generate_image_sync(*args: Any, **kwargs: Any) -> bytes:
     return asyncio.run(generate_image(*args, **kwargs))
+
+if __name__ == "__main__":
+    # snap-html "http://localhost:5173/report-helper/patrol-map/SKA-MS-68-002/1?threeD=false&access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogInNlcnZpY2Vfcm9sZSIsCiAgImlzcyI6ICJzdXBhYmFzZSIsCiAgImlhdCI6IDE3MjY5MzgwMDAsCiAgImV4cCI6IDE4ODQ3MDQ0MDAKfQ.nGu0UWzMMRjoJ_QiDecLjKyTcDrCgIM6XPAqzdqUV6M" -o screenshot3.png --width 1280 --height 720 --cm-width 18 --cm-height 18 --dpi 600 --object-fit cover --timeout 10.0 
+    generate_image_sync(
+        "http://localhost:5173/report-helper/patrol-map/SKA-MS-68-002/1?threeD=false&access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogInNlcnZpY2Vfcm9sZSIsCiAgImlzcyI6ICJzdXBhYmFzZSIsCiAgImlhdCI6IDE3MjY5MzgwMDAsCiAgImV4cCI6IDE4ODQ3MDQ0MDAKfQ.nGu0UWzMMRjoJ_QiDecLjKyTcDrCgIM6XPAqzdqUV6M", 
+        target_resolution=ScreenResolution(width=800, height=800),
+        # target_resolution=PrintMediaResolution(width=18, height=18, unit="cm", dpi=300), 
+        # as_if_show_in_screen_resolution="720p", 
+        output_file="screenshot4.png", 
+        render_timeout=90.0,
+    )

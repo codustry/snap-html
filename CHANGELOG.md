@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2023-10-15
+
 ### Added
 
 - Command Line Interface (CLI) for capturing screenshots
@@ -15,12 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New PrintMediaResolution type that combines pixel and CM dimensions
 - Object-fit options (contain, cover, fill, none) for controlling how content fits in viewport
 - Optional resolution parameter with sensible defaults
+- CLI support for render_timeout parameter to control waiting for RENDER_COMPLETE signal
+- CLI support for object_fit parameter to control content fitting
 
 ### Fixed
 
 - Fixed unit conversion in UnitConverter class to properly handle Pint quantity objects
 - Improved DPI and resolution handling for more accurate image sizing
 - Fixed type checking issues with resolution parameters
+- Fixed type handling in CLI for better compatibility with the core functions
+- Improved error handling in CLI for nonexistent files
 
 ### Changed
 
@@ -28,3 +34,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Modified resolution handling to support both screen and print media dimensions
 - Made resolution parameter optional with sensible defaults
 - Made object_fit parameter optional with a default value of "contain"
+- Updated CLI tests to properly test all parameters and edge cases

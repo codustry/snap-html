@@ -1,6 +1,6 @@
 [project]
 name = "snap-html"
-version = "0.5.0"
+version = "0.6.0"
 description = "a robust, modern and high performance Python library for generating image from a html string/html file/url build on top of `playwright`"
 authors = [{ name = "codustry", email = "hello@codustry.com" }]
 requires-python = "~=3.8"
@@ -20,6 +20,7 @@ dependencies = [
     "furl>=2.1.0",
     "pint>=0.21.1",
     "pytest>=6.2.5",
+    "pydantic>=2.10.6",
 ]
 
 [project.urls]
@@ -89,8 +90,6 @@ exclude = [
     "venv",
 ]
 
-[tool.ruff.lint]
-docstring-code-line-length = "dynamic"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402"]
